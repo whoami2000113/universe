@@ -1,0 +1,255 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C-Point Set - People Want</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #ffffff;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+    }
+    .curved-border {
+      border-radius: 1.5rem;
+    }
+    .post-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .post-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
+    }
+    input, select, .tinymce-container {
+      border-radius: 0.75rem;
+      background-color: #2d2d2d;
+      color: #ffffff;
+      border: 1px solid #4a4a4a;
+    }
+    button {
+      border-radius: 9999px;
+    }
+    .image-preview, .video-preview, .audio-preview, .embed-preview {
+      max-width: 100%;
+      border-radius: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .tinymce-container iframe {
+      border-radius: 0.75rem;
+    }
+  </style>
+</head>
+<body class="font-sans">
+  <!-- Header -->
+  <header class="bg-gray-900 bg-opacity-80 text-white py-6 curved-border">
+    <div class="container mx-auto px-4">
+      <h1 class="text-3xl font-bold">C-Point Set</h1>
+      <p class="mt-2 text-lg">Uniting Earth's People for Universal Development</p>
+      <select id="background-select" class="mt-4 p-2 w-full md:w-1/4" onchange="changeBackground()">
+        <option value="">Select Cosmic Background</option>
+        <option value="https://images-assets.nasa.gov/image/PIA12348/PIA12348~orig.jpg">Carina Nebula</option>
+        <option value="https://images-assets.nasa.gov/image/PIA01407/PIA01407~orig.jpg">Black Hole</option>
+        <option value="https://images-assets.nasa.gov/image/PIA18033/PIA18033~orig.jpg">Milky Way</option>
+        <option value="https://images-assets.nasa.gov/image/PIA23122/PIA23122~orig.jpg">Mars Surface</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="bg-gray-800 bg-opacity-80 text-white py-4 curved-border">
+    <div class="container mx-auto px-4 flex justify-around">
+      <a href="index.html" class="hover:text-gray-300">Now</a>
+      <a href="people-want.html" class="text-gray-300 font-bold">People Want</a>
+      <a href="people-need.html" class="hover:text-gray-300">People Need</a>
+      <a href="people-have.html" class="hover:text-gray-300">People Have</a>
+      <a href="tools.html" class="hover:text-gray-300">Tools</a>
+      <a href="projects.html" class="hover:text-gray-300">Projects</a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-8">
+    <section id="people-want">
+      <h2 class="text-2xl font-bold mb-4">People Want</h2>
+      <p class="mb-4 text-gray-300">Share what humanity aspires to achieve in the universe.</p>
+      <div class="post-form mb-6">
+        <div class="tinymce-container mb-2">
+          <textarea id="post-content" class="w-full"></textarea>
+        </div>
+        <input type="file" accept="image/*" id="image-upload" class="mt-2 p-2 curved-border">
+        <input type="url" id="video-url" class="mt-2 p-2 w-full curved-border" placeholder="Video URL (e.g., YouTube)">
+        <input type="url" id="audio-url" class="mt-2 p-2 w-full curved-border" placeholder="Audio URL (e.g., SoundCloud)">
+        <input type="url" id="embed-url" class="mt-2 p-2 w-full curved-border" placeholder="Embed URL (e.g., CodePen, GitHub Gist)">
+        <button onclick="addPost('people-want')" class="mt-2 bg-white text-black px-6 py-2 hover:bg-gray-200">Post</button>
+      </div>
+      <div id="people-want-posts" class="space-y-4">
+        <div class="post-card bg-gray-800 p-4 curved-border shadow-lg">
+          <div class="post-content"><p>Establish a self-sustaining human colony on Mars by 2050 to ensure species survival.</p></div>
+          <a href="https://www.nasa.gov/mars" class="text-blue-400 hover:text-blue-300">Learn More</a>
+          <p class="text-sm text-gray-400">Posted on May 27, 2025</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 bg-opacity-80 text-white py-6 curved-border">
+    <div class="container mx-auto px-4 text-center">
+      <p>© 2025 C-Point Set. Inspired by collaborative development like GitHub.</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript for handling posts -->
+  <script>
+    // Initialize TinyMCE
+    tinymce.init({
+      selector: '#post-content',
+      height: 200,
+      menubar: false,
+      plugins: 'link lists code',
+      toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | code',
+      content_style: 'body { color: #ffffff; background-color: #2d2d2d; font-family: sans-serif; }',
+      skin: 'oxide-dark',
+      content_css: 'dark'
+    });
+
+    // Dynamic background rotation
+    const backgrounds = [
+      'https://images-assets.nasa.gov/image/PIA12348/PIA12348~orig.jpg', // Carina Nebula
+      'https://images-assets.nasa.gov/image/PIA01407/PIA01407~orig.jpg', // Black Hole
+      'https://images-assets.nasa.gov/image/PIA18033/PIA18033~orig.jpg', // Milky Way
+      'https://images-assets.nasa.gov/image/PIA23122/PIA23122~orig.jpg'  // Mars Surface
+    ];
+    let currentBackgroundIndex = 0;
+
+    function updateBackground() {
+      document.body.style.backgroundImage = `url(${backgrounds[currentBackgroundIndex]})`;
+      currentBackgroundIndex = (currentBackgroundIndex + 1) % backgrounds.length;
+      localStorage.setItem('currentBackgroundIndex', currentBackgroundIndex);
+    }
+
+    function changeBackground() {
+      const select = document.getElementById('background-select');
+      const selectedValue = select.value;
+      if (selectedValue) {
+        document.body.style.backgroundImage = `url(${selectedValue})`;
+        localStorage.setItem('selectedBackground', selectedValue);
+      } else {
+        updateBackground();
+        localStorage.removeItem('selectedBackground');
+      }
+    }
+
+    // Load background on page load
+    window.onload = function() {
+      const selectedBackground = localStorage.getItem('selectedBackground');
+      if (selectedBackground) {
+        document.body.style.backgroundImage = `url(${selectedBackground})`;
+      } else {
+        currentBackgroundIndex = parseInt(localStorage.getItem('currentBackgroundIndex') || '0');
+        updateBackground();
+      }
+      setInterval(updateBackground, 24 * 60 * 60 * 1000); // Rotate every 24 hours
+    };
+
+    // Post digital content
+    function addPost(sectionId) {
+      const content = tinymce.get('post-content').getContent();
+      const imageUpload = document.getElementById('image-upload');
+      const videoUrl = document.getElementById('video-url').value.trim();
+      const audioUrl = document.getElementById('audio-url').value.trim();
+      const embedUrl = document.getElementById('embed-url').value.trim();
+      const imageFile = imageUpload.files[0];
+      const postsDiv = document.getElementById(`${sectionId}-posts`);
+
+      if (content || imageFile || videoUrl || audioUrl || embedUrl) {
+        const postDiv = document.createElement('div');
+        postDiv.className = 'post-card bg-gray-800 p-4 curved-border shadow-lg';
+        let postContent = '';
+
+        if (content) {
+          postContent += `<div class="post-content">${content}</div>`;
+        }
+        if (imageFile) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            postContent += `<img src="${e.target.result}" alt="User uploaded image" class="image-preview">`;
+            finalizePost();
+          };
+          reader.readAsDataURL(imageFile);
+        }
+        if (videoUrl) {
+          postContent += `<iframe src="${videoUrl}" class="video-preview" frameborder="0" allowfullscreen></iframe>`;
+        }
+        if (audioUrl) {
+          postContent += `<iframe src="${audioUrl}" class="audio-preview" frameborder="0"></iframe>`;
+        }
+        if (embedUrl) {
+          postContent += `<iframe src="${embedUrl}" class="embed-preview" frameborder="0"></iframe>`;
+        }
+
+        function finalizePost() {
+          postDiv.innerHTML = postContent + `<p class="text-sm text-gray-400">Posted on ${new Date().toLocaleString()}</p>`;
+          postsDiv.prepend(postDiv);
+        }
+
+        if (!imageFile) {
+          finalizePost();
+        }
+
+        tinymce.get('post-content').setContent('');
+        imageUpload.value = '';
+        document.getElementById('video-url').value = '';
+        document.getElementById('audio-url').value = '';
+        document.getElementById('embed-url').value = '';
+      } else {
+        alert('Please add some content to post.');
+      }
+    }
+  </script>
+</body>
+</html>
